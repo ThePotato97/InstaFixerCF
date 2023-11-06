@@ -8,7 +8,7 @@
   },
   "keywords": [],
   "author": "",
-  "license": "ISC",
+  "license": "AGPL-3.0-or-later",
   "dependencies": {
     "@haverstack/axios-fetch-adapter": "^0.8.0",
     "axios": "^1.6.0",
