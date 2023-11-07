@@ -32,6 +32,7 @@ const embed = async (req, env) => {
   } = (await getPostInfo(id, index, env)) ?? {};
   const truncatedCaption = caption ? caption.split("\n")[0] : "";
   const headers = [
+    `<meta charset="utf-8"/>`,
     `<link rel="canonical" href="${targetUrl}"/>`,
     `<meta property="og:url" content="${targetUrl}"/>`,
     `<meta property="theme-color" content="#E1306C"/>`,
@@ -62,6 +63,7 @@ const embed = async (req, env) => {
   }
 
   return html(`
+  <!DOCTYPE html>
     <html>
    <head>
    ${headers.join("\n")}
