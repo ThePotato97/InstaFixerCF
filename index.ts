@@ -154,10 +154,33 @@ router.get("/faux/", generateFakeEmbed);
 router.get("/reel/:id", embed);
 router.all("*", () => error(404));
 
+const handleError = (error) => {
+  console.error(error); // Log the error for server-side visibility
+  const code = error.status || 500;
+  // Return a generic error message
+  const htmlResponse = `
+    <!DOCTYPE html>
+    <html>
+      <head>
+      	<meta charset="utf-8" />
+	      <meta name="theme-color" content="#CE0071" />
+	      <meta name="twitter:title" content="PotatoInstaFix" />
+	      <meta property="og:url" content="https://instagram.com/reel/CzqaXfT6qdk6/" />
+        <meta name="description" content="An error occurred: ${code}">
+        <meta property="og:title" content="Error ${code}">
+        <meta property="og:description" content="Post might not be available ${code}">
+      </head>
+      <body>
+        <h1>Internal Server Error</h1>
+        <!-- Additional HTML content for the error page -->
+      </body>
+    </html>
+  `;
+  return html(htmlResponse);
+};
+
+// Fetch event listener
 export default {
   fetch: (request, ...args) =>
-    router
-      .handle(request, ...args)
-      .then(json) // send as JSON
-      .catch(error), // catch errors
+    router.handle(request, ...args).catch(handleError),
 };
