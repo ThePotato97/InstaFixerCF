@@ -76,9 +76,15 @@ const embed = async (req, env, event) => {
     likeCount,
     commentCount,
     username,
+    pages,
     json,
   } = (await getPostInfo(id, index, env)) ?? {};
   const truncatedCaption = caption ? caption.split("\n")[0] : "";
+  const text = encodeURIComponent(
+    `${
+      pages && pages > 1 ? `${index ?? 1}/${pages} 🖼️` : ``
+    } ${likeCount} ❤️  ${commentCount} 💬`
+  );
   const headers = [
     `<meta charset="utf-8"/>`,
     `<link rel="canonical" href="${targetUrl}"/>`,
@@ -88,6 +94,9 @@ const embed = async (req, env, event) => {
     `<meta property="twitter:creator" content="@${username}"/>`,
     `<meta property="twitter:title" content="@${username}"/>`,
     `<meta property="og:description" content="${truncatedCaption}"/>`,
+    `	<link rel="alternate"
+		href="https://gginstagram.com/faux?text=${text}&url=${url.pathname}"
+		type="application/json+oembed" title=@${username}>`,
     `<meta property="og:site_name" content="PotatoInstaFix"/>`,
   ];
 
@@ -124,9 +133,24 @@ const embed = async (req, env, event) => {
   return response;
 };
 
+const generateFakeEmbed = async (req) => {
+  const { text, url } = req.query;
+  if (!text || !url) return error(400);
+  return json({
+    author_name: decodeURIComponent(text),
+    author_url: `https://instagram.com${decodeURIComponent(url)}`,
+    provider_name: "PotatoInstaFix",
+    provider_url: "https://github.com/ThePotato97/InstaFixerCF",
+    title: "Instagram",
+    type: "link",
+    version: "1.0",
+  });
+};
+
 router.get("/media/:encodedUrl", handleRequest);
 router.get("/p/:id/:index", embed);
 router.get("/p/:id", embed);
+router.get("/faux/", generateFakeEmbed);
 router.get("/reel/:id", embed);
 router.all("*", () => error(404));
 

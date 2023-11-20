@@ -22,6 +22,7 @@ interface getPostInfoResponse {
   videoUrl: string;
   likeCount: number;
   commentCount: number;
+  playCount: number;
   pages?: number;
   json: string;
 }
@@ -70,6 +71,7 @@ export const getPostInfo = async (
     image_versions2,
     like_count,
     comment_count,
+    play_count,
     video_versions,
   } = postItem;
 
@@ -80,6 +82,7 @@ export const getPostInfo = async (
     imageUrl: image_versions2?.candidates?.[0]?.url,
     likeCount: like_count,
     commentCount: comment_count,
+    playCount: play_count,
     pages: carousel_media?.length,
     json: JSON.stringify(data),
   };
