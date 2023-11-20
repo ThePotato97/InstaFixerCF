@@ -152,7 +152,9 @@ router.get("/p/:id/:index", embed);
 router.get("/p/:id", embed);
 router.get("/faux/", generateFakeEmbed);
 router.get("/reel/:id", embed);
-router.all("*", () => error(404));
+router.all("*", () => () => {
+  return Response.redirect("https://github.com/ThePotato97/InstaFixerCF", 302);
+});
 
 const handleError = (error) => {
   console.error(error); // Log the error for server-side visibility
