@@ -152,7 +152,7 @@ router.get("/p/:id/:index", embed);
 router.get("/p/:id", embed);
 router.get("/faux/", generateFakeEmbed);
 router.get("/reel/:id", embed);
-router.all("*", () => () => {
+router.all("*", () => {
   return Response.redirect("https://github.com/ThePotato97/InstaFixerCF", 302);
 });
 
