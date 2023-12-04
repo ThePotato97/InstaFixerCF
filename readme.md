@@ -1,10 +1,10 @@
 # Instagram Embed Fixer
 
-Instagram Embed Fixer is a powerful tool developed using Cloudflare Workers, designed to resolve common issues encountered when embedding Instagram posts into Discord or Telegram.
+Instagram Embed Fixer is a powerful tool developed using Cloudflare Workers, designed to resolve common issues encountered when embedding Instagram posts into Discord.
 
 ## Usage
 
-To use Instagram Embed Fixer with Discord or Telegram, follow these steps:
+To use Instagram Embed Fixer with Discord, follow these steps:
 
 1. Find the URL of the Instagram post you want to embed. It will look something like this: `https://www.instagram.com/p/xxxx/`.
 2. Add `gg` to the start of the domain name in the URL, like this: `https://gginstagram.com/p/xxxx/`.
