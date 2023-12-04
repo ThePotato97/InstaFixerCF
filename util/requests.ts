@@ -18,7 +18,7 @@ declare const env: Env;
 interface getPostInfoResponse {
   username: string;
   caption: string;
-  imageUrl: string;
+  imageUrls: string[];
   videoUrl: string;
   likeCount: number;
   commentCount: number;
@@ -55,6 +55,7 @@ export const getPostInfo = async (
   if (data.items.length === 0) throw new Error("No items found");
   const { items } = data;
   const { carousel_media } = items[0];
+
   const item = items[0];
   let postItem;
   if (
@@ -66,20 +67,21 @@ export const getPostInfo = async (
   } else {
     postItem = item;
   }
-  const {
-    caption,
-    image_versions2,
-    like_count,
-    comment_count,
-    play_count,
-    video_versions,
-  } = postItem;
+  const imageUrls = carousel_media
+    ?.map((media) => {
+      return media.image_versions2?.candidates?.[0]?.url;
+    })
+    .filter(Boolean);
+  const { caption, like_count, comment_count } = item;
+  const { image_versions2, play_count, video_versions } = postItem;
 
   return {
     username: items[0].user.username,
     caption: caption?.text,
     videoUrl: video_versions?.[0]?.url,
-    imageUrl: image_versions2?.candidates?.[0]?.url,
+    imageUrls: index
+      ? [postItem.image_versions2?.candidates?.[0]?.url]
+      : imageUrls ?? [image_versions2?.candidates?.[0]?.url],
     likeCount: like_count,
     commentCount: comment_count,
     playCount: play_count,

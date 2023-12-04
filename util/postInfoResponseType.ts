@@ -6,7 +6,9 @@ export interface MediaInfoResponseRootObject {
   status: string;
 }
 
-interface MediaInfoResponseCarousel_mediaItem {}
+interface MediaInfoResponseCarousel_mediaItem {
+  image_versions2: MediaInfoResponseImage_versions2;
+}
 
 export interface MediaInfoResponseItemsItem {
   taken_at: number;
