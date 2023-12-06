@@ -1,6 +1,6 @@
 mod utils;
 
-use image::{imageops::FilterType, RgbImage};
+use image::{RgbImage};
 use web_sys::console;
 
 use image::codecs::jpeg::JpegEncoder;
