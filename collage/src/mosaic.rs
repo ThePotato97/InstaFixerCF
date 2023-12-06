@@ -22,7 +22,6 @@
  * SOFTWARE.
  */
 
-use crate::now;
 use std::cmp::max;
 use std::cmp::Ordering::Equal;
 use std::iter::zip;
