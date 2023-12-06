@@ -6,8 +6,8 @@ export interface MediaInfoResponseRootObject {
   status: string;
 }
 
-interface MediaInfoResponseCarousel_mediaItem {
-  image_versions2: MediaInfoResponseImage_versions2;
+interface MediaInfoResponseCarouselMediaItem {
+  image_versions2: MediaInfoResponseImageVersions2;
 }
 
 export interface MediaInfoResponseItemsItem {
@@ -28,10 +28,10 @@ export interface MediaInfoResponseItemsItem {
   comment_count: number;
   inline_composer_display_condition: string;
   inline_composer_imp_trigger_time: number;
-  image_versions2: MediaInfoResponseImage_versions2;
+  image_versions2: MediaInfoResponseImageVersions2;
   original_width: number;
   original_height: number;
-  carousel_media: MediaInfoResponseCarousel_mediaItem[];
+  carousel_media: MediaInfoResponseCarouselMediaItem[];
   user: MediaInfoResponseUser;
   can_viewer_reshare: boolean;
   caption_is_edited: boolean;
@@ -43,7 +43,7 @@ export interface MediaInfoResponseItemsItem {
   can_viewer_save: boolean;
   organic_tracking_token: string;
 }
-export interface MediaInfoResponseImage_versions2 {
+export interface MediaInfoResponseImageVersions2 {
   candidates: MediaInfoResponseCandidatesItem[];
 }
 export interface MediaInfoResponseCandidatesItem {
@@ -58,13 +58,13 @@ export interface MediaInfoResponseUser {
   is_private: boolean;
   profile_pic_url: string;
   profile_pic_id: string;
-  friendship_status: MediaInfoResponseFriendship_status;
+  friendship_status: MediaInfoResponseFriendshipStatus;
   is_verified: boolean;
   has_anonymous_profile_picture: boolean;
   is_unpublished: boolean;
   is_favorite: boolean;
 }
-export interface MediaInfoResponseFriendship_status {
+export interface MediaInfoResponseFriendshipStatus {
   following: boolean;
   outgoing_request: boolean;
   is_bestie: boolean;
