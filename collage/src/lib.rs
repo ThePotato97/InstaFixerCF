@@ -21,17 +21,9 @@ pub fn setup() {
 }
 
 #[wasm_bindgen]
-extern "C" {
-    #[wasm_bindgen(js_namespace = performance)]
-    fn now() -> f64;
-}
-
-#[wasm_bindgen]
 pub fn create_mosaic(image_arrays: Vec<js_sys::Uint8Array>) -> Vec<u8> {
     console_error_panic_hook::set_once();
 
-    // Add this line:
-    // tracing_wasm::set_as_global_default();
     // converting to rgb image
     console::log_1(&"converting to rgb images".into());
     let images: Vec<RgbImage> = image_arrays

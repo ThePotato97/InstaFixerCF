@@ -35,7 +35,7 @@ async function handleGeneric(req, _env, event) {
 
   const cache = caches.default;
   const cacheKey = req;
-  let response = undefined; // await cache.match(cacheKey);
+  let response = await cache.match(cacheKey);
 
   if (response) {
     return response;
@@ -59,6 +59,7 @@ async function handleGeneric(req, _env, event) {
         },
       });
     } else {
+      console.log("fetching single image", urls[0]);
       response = await fetch(urls[0]);
     }
 
@@ -105,6 +106,7 @@ const embed = async (req, env, event) => {
 
   const sendElseWhere = `https://ddinstagram.com${url.pathname}`;
   if (!allowedASNs.includes(asn) || !allowedCountries.includes(country) || c) {
+    console.log("sending elsewhere");
     const response = await fetch(sendElseWhere, {
       headers: {
         "User-Agent": "bot",
@@ -133,12 +135,14 @@ const embed = async (req, env, event) => {
     pages,
     json,
   } = (await getPostInfo(id, index, env)) ?? {};
-  const truncatedCaption = caption ? caption.split("\n")[0] : "";
-  const text = encodeURIComponent(
-    `${
-      pages && pages > 1 ? `${index ?? 1}/${pages} 🖼️` : ``
-    } ${likeCount} ❤️  ${commentCount} 💬`
-  );
+
+  const images = imageUrls.splice(0, 4);
+  const strippedTags = caption?.replace(/#[^\s]+/g, "").trim();
+  const truncatedCaption = strippedTags ? strippedTags.split("\n")[0] : "";
+  const stats = `${
+    pages && pages > 1 ? `${index ?? images.length}/${pages} 🖼️` : ``
+  } ${likeCount} ❤️  ${commentCount} 💬`;
+
   const headers = [
     `<meta charset="utf-8"/>`,
     `<link rel="canonical" href="${targetUrl}"/>`,
@@ -148,14 +152,17 @@ const embed = async (req, env, event) => {
     `<meta property="twitter:creator" content="@${username}"/>`,
     `<meta property="twitter:title" content="@${username}"/>`,
     `<meta property="og:description" content="${truncatedCaption}"/>`,
-    `	<link rel="alternate"
-		href="https://gginstagram.com/faux?text=${text}&url=${url.pathname}"
-		type="application/json+oembed" title=@${username}>`,
     `<meta property="og:site_name" content="PotatoInstaFix"/>`,
   ];
 
   if (videoUrl) {
     const proxyVideo = fetchFromProxy(videoUrl, "video");
+    const statsWithCaption = `${truncatedCaption}\n\n${stats}`;
+    headers.push(`<link rel="alternate"
+		href="https://gginstagram.com/faux?text=${encodeURIComponent(
+      statsWithCaption
+    )}&url=${url.pathname}"
+		type="application/json+oembed" title=@${username}>`);
     headers.push(`<meta property="og:video" content="${proxyVideo}"/>`);
     headers.push(`<meta property="og:video:type" content="video/mp4"/>`);
     headers.push(`<meta property="twitter:player" content="${proxyVideo}"/>`);
@@ -169,10 +176,12 @@ const embed = async (req, env, event) => {
     );
     headers.push(`<meta name="twitter:card" content="player"/>`);
   } else {
-    const proxyImage = fetchFromProxy(
-      imageUrls.splice(0, 4).join(","),
-      "image"
-    );
+    const proxyImage = fetchFromProxy(images.join(","), "image");
+    headers.push(`<link rel="alternate"
+		href="https://gginstagram.com/faux?text=${encodeURIComponent(stats)}&url=${
+      url.pathname
+    }"
+		type="application/json+oembed" title=@${username}>`);
     headers.push(`<meta property="og:image" content="${proxyImage}"/>`);
     headers.push(`<meta property="twitter:image" content="${proxyImage}"/>`);
     headers.push(`<meta name="twitter:card" content="summary_large_image"/>`);

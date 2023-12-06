@@ -1,7 +1,6 @@
 import axios, { AxiosHeaders } from "axios";
 import fetchAdapter from "@haverstack/axios-fetch-adapter";
 import { urlSegmentToInstagramId } from "instagram-id-to-url-segment";
-import { Env } from "../env";
 import { MediaInfoResponseRootObject } from "./postInfoResponseType";
 
 const client = axios.create({
@@ -27,7 +26,7 @@ interface getPostInfoResponse {
   json: string;
 }
 
-const getInfo = async (id: string, env) => {
+const getInfo = async (id: string, env: Env) => {
   return client.get<MediaInfoResponseRootObject>(
     `https://i.instagram.com/api/v1/media/${urlSegmentToInstagramId(id)}/info/`,
     {
@@ -47,7 +46,7 @@ const clamp = (num: number, min: number, max: number) => {
 export const getPostInfo = async (
   id: string,
   index: string,
-  env
+  env: Env
 ): Promise<getPostInfoResponse> => {
   const currentPage = Number(index) - 1;
   const res = await getInfo(id, env);
@@ -74,7 +73,7 @@ export const getPostInfo = async (
     .filter(Boolean);
   const { caption, like_count, comment_count } = item;
   const { image_versions2, play_count, video_versions } = postItem;
-
+  console.log("item", postItem);
   return {
     username: items[0].user.username,
     caption: caption?.text,
