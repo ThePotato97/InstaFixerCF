@@ -2,7 +2,8 @@ import axios from "axios";
 import { HTMLElement, parse } from "node-html-parser";
 import fetchAdapter from "@haverstack/axios-fetch-adapter";
 import { DataStructure } from "./dataStructure";
-import { Post } from "./post";
+import { Data } from "./post";
+import parseGraphQLData from "./parseGraphQLData";
 
 const getCaption = (root: HTMLElement): string | undefined => {
   const caption = root.querySelector(".Caption");
@@ -49,7 +50,15 @@ const checkForError = (root: HTMLElement) => {
   }
 };
 
-const getContextJSON = (root: HTMLElement): Post => {
+interface ScrapeResponse {
+  context: {
+    likes_count: number;
+    commenter_count: number;
+  };
+  gql_data: Data;
+}
+
+const getContextJSON = (root: HTMLElement): ScrapeResponse => {
   const regex = /(?<="contextJSON":).*?\}"/; // Replace with your actual regex
 
   const scripts = root.getElementsByTagName("script");
@@ -60,58 +69,111 @@ const getContextJSON = (root: HTMLElement): Post => {
   );
   if (matchingScript) {
     const matchResult = regex.exec(matchingScript.textContent)[0];
-    return JSON.parse(matchResult);
+    // handle double-encoded json
+    const doubleEncoded = JSON.parse(matchResult);
+    return JSON.parse(doubleEncoded);
   } else {
     throw new Error("No matching script found");
   }
 };
 
-export default async (id: string): Promise<DataStructure> => {
+const fetchPostData = async (id: string) => {
+  try {
+    const response = await fetch(
+      `https://www.instagram.com/p/${id}/embed/captioned`,
+      {
+        headers: {
+          "user-agent":
+            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/118.0.0.0 Safari/537.36",
+          "Accept-Language": "en-US,en;q=0.9",
+          "Sec-Fetch-Mode": "navigate",
+          Referer: `https://www.instagram.com/p/${id}/`,
+          Accept:
+            "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7",
+          Connection: "close"
+        }
+      }
+    );
+    return await response.text();
+  } catch {
+    throw new Error("Error fetching data");
+  }
+};
+
+export default async (
+  event: FetchEvent,
+  id: string
+): Promise<DataStructure> => {
   const url = `https://www.instagram.com/p/${id}/embed/captioned`;
   const cache = caches.default;
   const cacheKey = new Request(url);
-  let res = await cache.match(cacheKey);
 
-  if (!res) {
-    res = await fetch(`https://www.instagram.com/p/${id}/embed/captioned`, {
-      headers: {
-        "user-agent":
-          "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/118.0.0.0 Safari/537.36",
-        "Accept-Language": "en-US,en;q=0.9",
-        "Sec-Fetch-Mode": "navigate",
-        Referer: `https://www.instagram.com/p/${id}/`,
-        Accept:
-          "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7",
-        Connection: "close"
-      }
-    });
-    cache.put(cacheKey, res.clone());
-  } else {
-    console.log("scrape cache hit");
+  let cacheData = await cache.match(cacheKey);
+
+  if (cacheData) {
+    console.log("SCRAPE cache hit");
+    return await cacheData.json();
   }
 
-  if (!res.ok) {
-    throw new Error(
-      `HTTP error! status: ${res.status}  ${JSON.stringify(await res.json())}`
-    );
+  const body = await fetchPostData(id);
+  let extractedData: DataStructure;
+  const root = parse(body);
+
+  try {
+    const contextJSON = getContextJSON(root);
+
+    const { gql_data, context } = contextJSON;
+
+    console.log("json", contextJSON);
+
+    const parseGQLData = parseGraphQLData(gql_data);
+
+    extractedData = {
+      ...parseGQLData,
+      likeCount: context.likes_count,
+      commentCount: context.commenter_count,
+      provider: "SCRAPE"
+    };
+  } catch (e) {
+    console.log("error", e);
+  }
+  try {
+    checkForError(root);
+    const username = getUsername(root);
+    const caption = getCaption(root);
+    const commentCount = getCommentCount(root);
+    const imageUrls = getImageUrls(root);
+    const likeCount = getLikeCount(root);
+
+    extractedData = {
+      caption,
+      username,
+      videoUrl: undefined,
+      imageUrls,
+      extractedPages: imageUrls.map((url) => ({
+        mediaUrl: url,
+        isVideo: false
+      })),
+      likeCount,
+      commentCount,
+      provider: "SCRAPE"
+    };
+  } catch (e) {
+    console.log("error", e);
   }
 
-  const root = parse(await res.text());
-  checkForError(root);
-  const username = getUsername(root);
-  const caption = getCaption(root);
-  const commentCount = getCommentCount(root);
-  const imageUrls = getImageUrls(root);
-  const likeCount = getLikeCount(root);
+  if (!extractedData) {
+    throw new Error("No data found");
+  }
 
-  return {
-    caption,
-    username,
-    videoUrl: undefined,
-    imageUrls,
-    extractedPages: imageUrls.map((url) => ({ mediaUrl: url, isVideo: false })),
-    likeCount,
-    commentCount,
-    provider: "SCRAPE"
-  };
+  const response = new Response(JSON.stringify(extractedData), {
+    headers: {
+      "content-type": "application/json",
+      "Cache-Control": "s-maxage=86400"
+    }
+  });
+
+  event.waitUntil(cache.put(cacheKey, response.clone()));
+
+  return extractedData;
 };

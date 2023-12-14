@@ -111,6 +111,14 @@ async function tempRedirect(url) {
 
 const fetchData = async (event: FetchEvent, id, env) => {
   try {
+    console.log("fetching scrape");
+    const data = await scrapePostData(event, id);
+    return data;
+  } catch (e) {
+    console.error("scrape error", e);
+    Promise.reject(e);
+  }
+  try {
     console.log("fetching graphql");
     const data = await getGraphQLData(event, id);
     return data;
@@ -124,14 +132,6 @@ const fetchData = async (event: FetchEvent, id, env) => {
     return data;
   } catch (e) {
     console.error("papi error", e);
-    Promise.reject(e);
-  }
-  try {
-    console.log("fetching scrape");
-    const data = await scrapePostData(id);
-    return data;
-  } catch (e) {
-    console.error("scrape error", e);
     Promise.reject(e);
   }
   return {
@@ -166,14 +166,19 @@ const embed = async (req, env, event) => {
     return Response.redirect(targetUrl, 302);
   }
 
-  const cacheKey = req;
+  
+  const cacheUrl = new URL(`https://instagram.com/${url.pathname}`);
+  
+  const cacheKey = new Request(cacheUrl);
+  console.log("cache key", cacheKey.url);
   const cache = caches.default;
+
   const cachedResponse = await cache.match(cacheKey);
 
-  // if (cachedResponse) {
-  //   console.log("embed cache hit");
-  //   return cachedResponse;
-  // }
+  if (cachedResponse) {
+    console.log("embed cache hit");
+    return cachedResponse;
+  }
 
   // const sendElseWhere = `https://ddinstagram.com${url.pathname}`;
   // if (!allowedASNs.includes(asn) || !allowedCountries.includes(country) || c) {
@@ -196,6 +201,9 @@ const embed = async (req, env, event) => {
     }
 
     const pages = extractedPages?.length;
+    const formatter = Intl.NumberFormat('en', { notation: 'compact' });
+    const formattedLikeCount = formatter.format(likeCount);
+    const formattedCommentCount = formatter.format(commentCount);
 
     const selectedPage = clamp(Number(index), 1, extractedPages?.length);
 
@@ -209,7 +217,7 @@ const embed = async (req, env, event) => {
     const truncatedCaption = strippedTags ? strippedTags.split("\n")[0] : "";
     const stats = `${
       pages && pages > 1 ? `${index ?? images.length}/${pages} 🖼️` : ""
-    } ${likeCount} ❤️  ${commentCount} 💬`;
+    } ${formattedLikeCount} ❤️  ${formattedCommentCount} 💬`;
 
     const headers = [
       '<meta charset="utf-8"/>',
@@ -259,7 +267,7 @@ const embed = async (req, env, event) => {
       headers.push(`<meta property="og:image:width" content="${0}"/>`);
       headers.push(`<meta property="og:image:height" content="${0}"/>`);
       headers.push(`<meta property="twitter:image:height" content="${0}"/>`);
-      headers.push(`<meta property="twitter:image:width" content="${0}"/>`)
+      headers.push(`<meta property="twitter:image:width" content="${0}"/>`);
     }
 
     const response = html(`
@@ -286,8 +294,9 @@ const embed = async (req, env, event) => {
     return response;
   } catch (e) {
     console.error("error", e);
-    const sendElseWhere = `https://ddinstagram.com${url.pathname}`;
-    return tempRedirect(sendElseWhere);
+    // const sendElseWhere = `https://ddinstagram.com${url.pathname}`;
+    // return tempRedirect(sendElseWhere);
+    return html("oopsie woopsie");
   }
 };
 

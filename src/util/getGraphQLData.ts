@@ -1,5 +1,6 @@
 import { DataStructure } from "./dataStructure";
 import fetchWrapper from "./fetchWrapper";
+import parseGraphQLData from "./parseGraphQLData";
 import { Post } from "./post";
 /**
  * 
@@ -42,52 +43,28 @@ const getGraphQLData = async (postId: string): Promise<Post> => {
 export default async (event: FetchEvent, postId: string): Promise<DataStructure> => {
   const cache = caches.default;
   const cacheKey = new Request(`https://www.instagram.com/p/${postId}/gql`);
-  let res = await cache.match(cacheKey);
-  if (res) {
+
+  const cacheData = await cache.match(cacheKey);
+  if (cacheData) {
     console.log("GQL cache hit");
-    return await res.json();
+    return await cacheData.json();
   }
+  
   const graphQLResponse = await getGraphQLData(postId);
+  
   const { data } = graphQLResponse;
-  const { shortcode_media } = data;
-  if (!shortcode_media) {
-    console.error("Invalid shortcode_media", graphQLResponse);
-    throw new Error("Invalid shortcode_media");
-  }
-  const {
-    edge_sidecar_to_children,
-    edge_media_to_caption,
-    edge_media_to_comment,
-    edge_media_preview_like,
-    video_url,
-    owner
-  } = shortcode_media;
 
-  const caption = edge_media_to_caption?.edges[0]?.node.text;
+  const ParsedGraphQLData = parseGraphQLData(data);
 
-  const extractedImages = edge_sidecar_to_children?.edges !== undefined
-    ? edge_sidecar_to_children.edges.map((edge) => edge.node.display_url)
-    : [shortcode_media.display_url];
-
-  const extractedPages = edge_sidecar_to_children?.edges.map((edge) => ({
-    mediaUrl: edge.node.video_url ?? edge.node.display_url,
-    isVideo: edge.node.is_video,
-    height: edge.node.dimensions.height,
-    width: edge.node.dimensions.width
-  }));
   const extractedData = {
-    caption,
-    username: owner.username,
-    imageUrls: extractedImages,
-    extractedPages: extractedPages,
-    videoUrl: video_url,
-    likeCount: edge_media_preview_like.count,
-    commentCount: edge_media_to_comment.count,
+    ...ParsedGraphQLData,
     provider: "GQL",
   };
+
   const response = new Response(JSON.stringify(extractedData), {
     headers: { "content-type": "application/json", "Cache-Control": "s-maxage=86400"}
   });
+
   console.log("GQL cache miss");
   event.waitUntil(cache.put(cacheKey, response.clone()));
   return extractedData
