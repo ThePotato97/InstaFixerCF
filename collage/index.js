@@ -7,7 +7,7 @@ if (typeof process !== "undefined" && process.release.name === "node") {
   imports.__wbg_set_wasm(nodemod);
 } else {
   const instance = new WebAssembly.Instance(wkmod, {
-    "./pkg/collage_bg.js": imports,
+    "./collage_bg.js": imports,
   });
   imports.__wbg_set_wasm(instance.exports);
 }

@@ -8,6 +8,7 @@ export interface MediaInfoResponseRootObject {
 
 interface MediaInfoResponseCarouselMediaItem {
   image_versions2: MediaInfoResponseImageVersions2;
+  video_versions?: MediaInfoResponseImageVersions2;
 }
 
 export interface MediaInfoResponseItemsItem {
@@ -29,6 +30,7 @@ export interface MediaInfoResponseItemsItem {
   inline_composer_display_condition: string;
   inline_composer_imp_trigger_time: number;
   image_versions2: MediaInfoResponseImageVersions2;
+  video_versions?: MediaInfoResponseImageVersions2;
   original_width: number;
   original_height: number;
   carousel_media: MediaInfoResponseCarouselMediaItem[];

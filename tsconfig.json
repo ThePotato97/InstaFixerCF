@@ -3,11 +3,15 @@
         "target": "esnext",
         "module": "esnext",
         "moduleResolution": "node",
+        "noUncheckedIndexedAccess": true,
         "lib": [
-            "esnext"
+            "esnext",
         ],
         "types": [
             "@cloudflare/workers-types"
-        ]
-    }
+        ],
+    },
+    "include": [
+        "./src"
+    ]
 }
