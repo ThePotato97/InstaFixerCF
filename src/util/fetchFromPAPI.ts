@@ -1,12 +1,7 @@
-import axios from "axios";
-import fetchAdapter from "@haverstack/axios-fetch-adapter";
 import { urlSegmentToInstagramId } from "instagram-id-to-url-segment";
 import { MediaInfoResponseRootObject } from "./postInfoResponseType";
 import { DataStructure } from "./dataStructure";
 
-const client = axios.create({
-  adapter: fetchAdapter
-});
 
 interface Env {
   COOKIE: string;
@@ -29,8 +24,8 @@ const commonInstagramHeaders = {
   "accept-language": "en-US,en;q=0.9,en;q=0.8"
 };
 
-const getInfo = async (id: string, env: Env) =>
-  client.get<MediaInfoResponseRootObject>(
+const getInfo = async (id: string, env: Env): Promise<MediaInfoResponseRootObject> => {
+  const res = await fetch(
     `https://i.instagram.com/api/v1/media/${urlSegmentToInstagramId(id)}/info/`,
     {
       headers: {
@@ -39,6 +34,9 @@ const getInfo = async (id: string, env: Env) =>
       }
     }
   );
+  if (!res.ok) throw new Error(`PAPI Failed to fetch ${res.status}`);
+  return await res.json();
+}
 
 
 export default async (event: FetchEvent, postId: string, env: Env): Promise<DataStructure> => {
@@ -54,11 +52,10 @@ export default async (event: FetchEvent, postId: string, env: Env): Promise<Data
 
   const res = await getInfo(postId, env);
   
-  const { data, status } = res;
+  const { items } = res;
 
-  if (status !== 200) throw new Error("Invalid status code");
-  if (data.items.length === 0) throw new Error("No items found");
-  const { items } = data;
+
+  if (items.length === 0) throw new Error("No items found");
   const { carousel_media: carouselMedia } = items[0];
 
   const item = items[0];
