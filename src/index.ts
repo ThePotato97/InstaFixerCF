@@ -4,7 +4,7 @@ import {
   html, // creates HTML responses
   Router // the ~440 byte router itself
 } from "itty-router";
-
+import he from 'he';
 import Constants from "./constants";
 import fetchFromPAPI from "./util/fetchFromPAPI.js";
 import scrapePostData from "./util/scrapePostData";
@@ -166,19 +166,18 @@ const embed = async (req, env, event) => {
     return Response.redirect(targetUrl, 302);
   }
 
-  
   const cacheUrl = new URL(`https://instagram.com/${url.pathname}`);
-  
+
   const cacheKey = new Request(cacheUrl);
   console.log("cache key", cacheKey.url);
   const cache = caches.default;
 
   const cachedResponse = await cache.match(cacheKey);
 
-  if (cachedResponse) {
-    console.log("embed cache hit");
-    return cachedResponse;
-  }
+  // if (cachedResponse) {
+  //   console.log("embed cache hit");
+  //   return cachedResponse;
+  // }
 
   // const sendElseWhere = `https://ddinstagram.com${url.pathname}`;
   // if (!allowedASNs.includes(asn) || !allowedCountries.includes(country) || c) {
@@ -201,9 +200,13 @@ const embed = async (req, env, event) => {
     }
 
     const pages = extractedPages?.length;
-    const formatter = Intl.NumberFormat('en', { notation: 'compact' });
-    const formattedLikeCount = formatter.format(likeCount);
-    const formattedCommentCount = formatter.format(commentCount);
+    const formatter = Intl.NumberFormat("en", { notation: "compact" });
+    const formattedLikeCount = likeCount
+      ? formatter.format(likeCount)
+      : undefined;
+    const formattedCommentCount = commentCount
+      ? formatter.format(commentCount)
+      : undefined;
 
     const selectedPage = clamp(Number(index), 1, extractedPages?.length);
 
@@ -215,9 +218,18 @@ const embed = async (req, env, event) => {
 
     const strippedTags = caption?.replace(/#[^\s]+/g, "").trim();
     const truncatedCaption = strippedTags ? strippedTags.split("\n")[0] : "";
-    const stats = `${
-      pages && pages > 1 ? `${index ?? images.length}/${pages} 🖼️` : ""
-    } ${formattedLikeCount} ❤️  ${formattedCommentCount} 💬`;
+    const encodedCaption = he.encode(truncatedCaption);
+    const statsArray = []
+    if (pages && pages > 1) {
+      statsArray.push(`${index ?? images.length}/${pages} 🖼️`);
+    }
+    if (formattedLikeCount) {
+      statsArray.push(`${formattedLikeCount} ❤️`);
+    }
+    if (formattedCommentCount) {
+      statsArray.push(`${formattedCommentCount} 💬`);
+    }
+    const stats = statsArray.join(" • ");
 
     const headers = [
       '<meta charset="utf-8"/>',
@@ -227,7 +239,7 @@ const embed = async (req, env, event) => {
       `<meta property="twitter:site" content="@${username}"/>`,
       `<meta property="twitter:creator" content="@${username}"/>`,
       `<meta property="twitter:title" content="@${username}"/>`,
-      `<meta property="og:description" content="${truncatedCaption}"/>`,
+      `<meta property="og:description" content="${encodedCaption}"/>`,
       `<meta property="og:site_name" content="PotatoInstaFix (${provider})"/>`
     ];
 
@@ -293,10 +305,9 @@ const embed = async (req, env, event) => {
 
     return response;
   } catch (e) {
-    console.error("error", e);
-    // const sendElseWhere = `https://ddinstagram.com${url.pathname}`;
-    // return tempRedirect(sendElseWhere);
-    return html("oopsie woopsie");
+    // send elsewhere
+    const sendElseWhere = `https://ddinstagram.com${url.pathname}`;
+    return tempRedirect(sendElseWhere);
   }
 };
 
